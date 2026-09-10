@@ -25,6 +25,10 @@ FetchContent_Declare(
     GIT_PROGRESS TRUE
     GIT_SHALLOW TRUE
 )
+
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(glew-cmake_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+
 FetchContent_MakeAvailable(glew)
 
 # OpenGL

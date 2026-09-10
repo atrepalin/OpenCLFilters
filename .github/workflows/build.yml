@@ -9,113 +9,113 @@ permissions:
   contents: write
 
 jobs:
-  build-windows:
-    name: Build Windows
-    runs-on: windows-2022
+  # build-windows:
+  #   name: Build Windows
+  #   runs-on: windows-2022
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v6
 
-      - name: Install CMake 
-        uses: lukka/get-cmake@latest
-        with: 
-          cmakeVersion: 4.4.1
+  #     - name: Install CMake 
+  #       uses: lukka/get-cmake@latest
+  #       with: 
+  #         cmakeVersion: 4.4.1
 
-      - name: Install MinGW
-        shell: powershell
-        run: |
-          choco install mingw -y
+  #     - name: Install MinGW
+  #       shell: powershell
+  #       run: |
+  #         choco install mingw -y
 
-      - name: Check tools
-        shell: bash
-        run: |
-          g++ --version
-          cmake --version
+  #     - name: Check tools
+  #       shell: bash
+  #       run: |
+  #         g++ --version
+  #         cmake --version
 
-      - name: Configure
-        shell: bash
-        run: |
-          cmake -S . -B build \
-            -G "MinGW Makefiles" \
-            -DCMAKE_BUILD_TYPE=Release
+  #     - name: Configure
+  #       shell: bash
+  #       run: |
+  #         cmake -S . -B build \
+  #           -G "MinGW Makefiles" \
+  #           -DCMAKE_BUILD_TYPE=Release
 
-      - name: Build
-        shell: bash
-        run: |
-          cmake --build build --config Release --parallel 2 --verbose
+  #     - name: Build
+  #       shell: bash
+  #       run: |
+  #         cmake --build build --config Release --parallel 2 --verbose
 
-      - name: Package
-        shell: bash
-        run: |
-          mkdir -p package
-          cp build/OpenCLFilters.exe package/OpenCLFilters.exe
+  #     - name: Package
+  #       shell: bash
+  #       run: |
+  #         mkdir -p package
+  #         cp build/OpenCLFilters.exe package/OpenCLFilters.exe
 
-          cd package
-          7z a ../OpenCLFilters-Windows-x64.zip OpenCLFilters.exe
+  #         cd package
+  #         7z a ../OpenCLFilters-Windows-x64.zip OpenCLFilters.exe
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: OpenCLFilters-Windows-x64
-          path: OpenCLFilters-Windows-x64.zip
+  #     - name: Upload artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: OpenCLFilters-Windows-x64
+  #         path: OpenCLFilters-Windows-x64.zip
 
-  build-linux:
-    name: Build Linux
-    runs-on: ubuntu-24.04
+  # build-linux:
+  #   name: Build Linux
+  #   runs-on: ubuntu-24.04
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v6
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            cmake \
-            pkg-config \
-            libwayland-dev \
-            wayland-protocols \
-            libxkbcommon-dev \
-            libx11-dev \
-            libxrandr-dev \
-            libxinerama-dev \
-            libxcursor-dev \
-            libxi-dev \
-            libgl1-mesa-dev \
-            libglvnd-dev \
-            opencl-headers \
-            ocl-icd-opencl-dev
+  #     - name: Install dependencies
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y \
+  #           build-essential \
+  #           cmake \
+  #           pkg-config \
+  #           libwayland-dev \
+  #           wayland-protocols \
+  #           libxkbcommon-dev \
+  #           libx11-dev \
+  #           libxrandr-dev \
+  #           libxinerama-dev \
+  #           libxcursor-dev \
+  #           libxi-dev \
+  #           libgl1-mesa-dev \
+  #           libglvnd-dev \
+  #           opencl-headers \
+  #           ocl-icd-opencl-dev
 
-      - name: Install CMake 
-        uses: lukka/get-cmake@latest
-        with: 
-          cmakeVersion: 4.4.1
+  #     - name: Install CMake 
+  #       uses: lukka/get-cmake@latest
+  #       with: 
+  #         cmakeVersion: 4.4.1
 
-      - name: Configure
-        run: |
-          cmake -S . -B build \
-            -DCMAKE_BUILD_TYPE=Release
+  #     - name: Configure
+  #       run: |
+  #         cmake -S . -B build \
+  #           -DCMAKE_BUILD_TYPE=Release
 
-      - name: Build
-        run: |
-          cmake --build build --config Release --parallel 2 --verbose
+  #     - name: Build
+  #       run: |
+  #         cmake --build build --config Release --parallel 2 --verbose
 
-      - name: Package
-        run: |
-          mkdir -p package
-          cp build/OpenCLFilters package/OpenCLFilters
+  #     - name: Package
+  #       run: |
+  #         mkdir -p package
+  #         cp build/OpenCLFilters package/OpenCLFilters
 
-          tar -C package -czf \
-            OpenCLFilters-Linux-x64.tar.gz \
-            OpenCLFilters
+  #         tar -C package -czf \
+  #           OpenCLFilters-Linux-x64.tar.gz \
+  #           OpenCLFilters
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: OpenCLFilters-Linux-x64
-          path: OpenCLFilters-Linux-x64.tar.gz
+  #     - name: Upload artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: OpenCLFilters-Linux-x64
+  #         path: OpenCLFilters-Linux-x64.tar.gz
 
   build-macos:
     name: Build macOS
@@ -160,41 +160,41 @@ jobs:
           name: OpenCLFilters-macOS-universal
           path: OpenCLFilters-macOS-universal.zip
 
-  release:
-    name: Create GitHub Release
-    needs:
-      - build-windows
-      - build-linux
-      - build-macos
+  # release:
+  #   name: Create GitHub Release
+  #   needs:
+  #     - build-windows
+  #     - build-linux
+  #     - build-macos
 
-    runs-on: ubuntu-24.04
+  #   runs-on: ubuntu-24.04
 
-    steps:
-      - name: Download Windows artifact
-        uses: actions/download-artifact@v5
-        with:
-          name: OpenCLFilters-Windows-x64
-          path: release
+  #   steps:
+  #     - name: Download Windows artifact
+  #       uses: actions/download-artifact@v5
+  #       with:
+  #         name: OpenCLFilters-Windows-x64
+  #         path: release
 
-      - name: Download Linux artifact
-        uses: actions/download-artifact@v5
-        with:
-          name: OpenCLFilters-Linux-x64
-          path: release
+  #     - name: Download Linux artifact
+  #       uses: actions/download-artifact@v5
+  #       with:
+  #         name: OpenCLFilters-Linux-x64
+  #         path: release
 
-      - name: Download macOS artifact
-        uses: actions/download-artifact@v5
-        with:
-          name: OpenCLFilters-macOS-universal
-          path: release
+  #     - name: Download macOS artifact
+  #       uses: actions/download-artifact@v5
+  #       with:
+  #         name: OpenCLFilters-macOS-universal
+  #         path: release
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: OpenCLFilters ${{ github.ref_name }}
-          generate_release_notes: true
-          files: |
-            release/OpenCLFilters-Windows-x64.zip
-            release/OpenCLFilters-Linux-x64.tar.gz
-            release/OpenCLFilters-macOS-universal.zip
+  #     - name: Create GitHub Release
+  #       uses: softprops/action-gh-release@v3
+  #       with:
+  #         tag_name: ${{ github.ref_name }}
+  #         name: OpenCLFilters ${{ github.ref_name }}
+  #         generate_release_notes: true
+  #         files: |
+  #           release/OpenCLFilters-Windows-x64.zip
+  #           release/OpenCLFilters-Linux-x64.tar.gz
+  #           release/OpenCLFilters-macOS-universal.zip
