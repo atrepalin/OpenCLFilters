@@ -9,56 +9,88 @@ permissions:
   contents: write
 
 jobs:
-  # build-windows:
-  #   name: Build Windows
-  #   runs-on: windows-2022
+  build-windows:
+    name: Build Windows
+    runs-on: windows-2022
 
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v6
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
 
-  #     - name: Install CMake 
-  #       uses: lukka/get-cmake@latest
-  #       with: 
-  #         cmakeVersion: 4.4.1
+      - name: Install CMake 
+        uses: lukka/get-cmake@latest
+        with: 
+          cmakeVersion: 4.4.1
 
-  #     - name: Install MinGW
-  #       shell: powershell
-  #       run: |
-  #         choco install mingw -y
+      - name: Install MinGW
+        shell: powershell
+        run: |
+          choco install mingw -y
 
-  #     - name: Check tools
-  #       shell: bash
-  #       run: |
-  #         g++ --version
-  #         cmake --version
+      - name: Install OpenCL
+        shell: powershell
+        run: |
+          git clone --depth 1 https://github.com/KhronosGroup/OpenCL-ICD-Loader.git C:\OpenCL-ICD-Loader
+          git clone --depth 1 https://github.com/KhronosGroup/OpenCL-Headers.git C:\OpenCL-Headers
 
-  #     - name: Configure
-  #       shell: bash
-  #       run: |
-  #         cmake -S . -B build \
-  #           -G "MinGW Makefiles" \
-  #           -DCMAKE_BUILD_TYPE=Release
+          cmake -S C:\OpenCL-ICD-Loader -B C:\OpenCL-ICD-Loader\build `
+            -G "MinGW Makefiles" `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DOPENCL_ICD_LOADER_BUILD_SHARED_LIBS=ON `
+            -DOPENCL_ICD_LOADER_HEADERS_DIR=C:\OpenCL-Headers
 
-  #     - name: Build
-  #       shell: bash
-  #       run: |
-  #         cmake --build build --config Release --parallel 2 --verbose
+          cmake --build C:\OpenCL-ICD-Loader\build --config Release --parallel
 
-  #     - name: Package
-  #       shell: bash
-  #       run: |
-  #         mkdir -p package
-  #         cp build/OpenCLFilters.exe package/OpenCLFilters.exe
+          New-Item -ItemType Directory -Force -Path C:\OpenCL\include | Out-Null
+          New-Item -ItemType Directory -Force -Path C:\OpenCL\lib | Out-Null
+          New-Item -ItemType Directory -Force -Path C:\OpenCL\bin | Out-Null
 
-  #         cd package
-  #         7z a ../OpenCLFilters-Windows-x64.zip OpenCLFilters.exe
+          Copy-Item `
+            C:\OpenCL-Headers\CL `
+            C:\OpenCL\include\CL `
+            -Recurse
 
-  #     - name: Upload artifact
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: OpenCLFilters-Windows-x64
-  #         path: OpenCLFilters-Windows-x64.zip
+          Copy-Item `
+            C:\OpenCL-ICD-Loader\build\OpenCL.dll `
+            C:\OpenCL\bin\OpenCL.dll
+
+          Copy-Item `
+            C:\OpenCL-ICD-Loader\build\libOpenCL.dll.a `
+            C:\OpenCL\lib\libOpenCL.dll.a
+
+      - name: Check tools
+        shell: bash
+        run: |
+          g++ --version
+          cmake --version
+
+      - name: Configure
+        shell: bash
+        run: |
+          cmake -S . -B build \
+            -G "MinGW Makefiles" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DOPENCL_ROOT="C:/OpenCL"
+
+      - name: Build
+        shell: bash
+        run: |
+          cmake --build build --config Release --parallel 2 --verbose
+
+      - name: Package
+        shell: bash
+        run: |
+          mkdir -p package
+          cp build/OpenCLFilters.exe package/OpenCLFilters.exe
+
+          cd package
+          7z a ../OpenCLFilters-Windows-x64.zip OpenCLFilters.exe
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenCLFilters-Windows-x64
+          path: OpenCLFilters-Windows-x64.zip
 
   # build-linux:
   #   name: Build Linux
@@ -117,48 +149,48 @@ jobs:
   #         name: OpenCLFilters-Linux-x64
   #         path: OpenCLFilters-Linux-x64.tar.gz
 
-  build-macos:
-    name: Build macOS
-    runs-on: macos-14
+  # build-macos:
+  #   name: Build macOS
+  #   runs-on: macos-14
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v6
 
-      - name: Install CMake
-        run: |
-          brew install cmake
+  #     - name: Install CMake
+  #       run: |
+  #         brew install cmake
 
-      - name: Check tools
-        run: |
-          cmake --version
-          clang++ --version
+  #     - name: Check tools
+  #       run: |
+  #         cmake --version
+  #         clang++ --version
 
-      - name: Configure
-        run: |
-          cmake -S . -B build \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_OSX_ARCHITECTURES="arm64"
+  #     - name: Configure
+  #       run: |
+  #         cmake -S . -B build \
+  #           -DCMAKE_BUILD_TYPE=Release \
+  #           -DCMAKE_OSX_ARCHITECTURES="arm64"
 
-      - name: Build
-        run: |
-          cmake --build build --config Release --parallel 2 --verbose
+  #     - name: Build
+  #       run: |
+  #         cmake --build build --config Release --parallel 2 --verbose
 
-      - name: Check architecture
-        run: |
-          file build/OpenCLFilters.app/Contents/MacOS/OpenCLFilters
+  #     - name: Check architecture
+  #       run: |
+  #         file build/OpenCLFilters.app/Contents/MacOS/OpenCLFilters
 
-      - name: Package
-        run: |
-          ditto -c -k --sequesterRsrc --keepParent \
-            build/OpenCLFilters.app \
-            OpenCLFilters-macOS-arm64.zip
+  #     - name: Package
+  #       run: |
+  #         ditto -c -k --sequesterRsrc --keepParent \
+  #           build/OpenCLFilters.app \
+  #           OpenCLFilters-macOS-arm64.zip
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: OpenCLFilters-macOS-arm64
-          path: OpenCLFilters-macOS-arm64.zip
+  #     - name: Upload artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: OpenCLFilters-macOS-arm64
+  #         path: OpenCLFilters-macOS-arm64.zip
 
   # release:
   #   name: Create GitHub Release

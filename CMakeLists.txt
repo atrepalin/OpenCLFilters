@@ -98,17 +98,52 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 )
 
 # OpenCL
-if(APPLE)
-    # macOS provides OpenCL as a system framework.
-    find_package(OpenCL REQUIRED)
+set(OPENCL_FOUND FALSE)
 
-    target_link_libraries(${PROJECT_NAME} PRIVATE
-        OpenCL::OpenCL
+# Explicit OpenCL paths
+if(OPENCL_INCLUDE_DIR AND OPENCL_LIBRARY)
+    set(OPENCL_FOUND TRUE)
+
+    message(STATUS "OpenCL found using explicitly specified paths:")
+    message(STATUS "  Headers: ${OPENCL_INCLUDE_DIR}")
+    message(STATUS "  Library: ${OPENCL_LIBRARY}")
+endif()
+
+# OpenCL_ROOT
+if(NOT OPENCL_FOUND AND OPENCL_ROOT)
+    find_path(OPENCL_INCLUDE_DIR
+        NAMES CL/cl.h
+        HINTS "${OPENCL_ROOT}"
+        PATH_SUFFIXES include
     )
 
-elseif(WIN32)
-    # Prefer OpenCL from CUDA toolkit on Windows.
-    find_program(CUDA_NVCC nvcc)
+    find_library(OPENCL_LIBRARY
+        NAMES OpenCL
+        HINTS "${OPENCL_ROOT}"
+        PATH_SUFFIXES
+            lib
+            lib64
+            lib/x64
+    )
+
+    if(OPENCL_INCLUDE_DIR AND OPENCL_LIBRARY)
+        set(OPENCL_FOUND TRUE)
+
+        message(STATUS "OpenCL found using OPENCL_ROOT:")
+        message(STATUS "  Root:    ${OPENCL_ROOT}")
+        message(STATUS "  Headers: ${OPENCL_INCLUDE_DIR}")
+        message(STATUS "  Library: ${OPENCL_LIBRARY}")
+    endif()
+endif()
+
+# Windows: try CUDA Toolkit
+if(WIN32 AND NOT OPENCL_FOUND)
+    find_program(CUDA_NVCC
+        NAMES nvcc
+        HINTS
+            "$ENV{CUDA_PATH}/bin"
+            "$ENV{CUDA_HOME}/bin"
+    )
 
     if(CUDA_NVCC)
         get_filename_component(CUDA_BIN_DIR "${CUDA_NVCC}" DIRECTORY)
@@ -116,39 +151,60 @@ elseif(WIN32)
 
         find_path(OPENCL_INCLUDE_DIR
             NAMES CL/cl.h
-            HINTS "${CUDA_ROOT}"
+            HINTS
+                "${CUDA_ROOT}"
+                "$ENV{CUDA_PATH}"
             PATH_SUFFIXES include
         )
 
         find_library(OPENCL_LIBRARY
             NAMES OpenCL
-            HINTS "${CUDA_ROOT}"
-            PATH_SUFFIXES lib/x64 lib64 lib
+            HINTS
+                "${CUDA_ROOT}"
+                "$ENV{CUDA_PATH}"
+            PATH_SUFFIXES
+                lib/x64
+                lib64
+                lib
         )
+
+        if(OPENCL_INCLUDE_DIR AND OPENCL_LIBRARY)
+            set(OPENCL_FOUND TRUE)
+
+            message(STATUS "OpenCL found through CUDA Toolkit:")
+            message(STATUS "  CUDA:    ${CUDA_ROOT}")
+            message(STATUS "  Headers: ${OPENCL_INCLUDE_DIR}")
+            message(STATUS "  Library: ${OPENCL_LIBRARY}")
+        endif()
     endif()
+endif()
 
-    if(OPENCL_INCLUDE_DIR AND OPENCL_LIBRARY)
-        target_include_directories(${PROJECT_NAME} PRIVATE
-            "${OPENCL_INCLUDE_DIR}"
-        )
-        target_link_libraries(${PROJECT_NAME} PRIVATE
-            "${OPENCL_LIBRARY}"
-        )
-    else()
-        find_package(OpenCL REQUIRED)
-        target_link_libraries(${PROJECT_NAME} PRIVATE
-            OpenCL::OpenCL
-        )
+
+if(NOT OPENCL_FOUND)
+    find_package(OpenCL QUIET)
+
+    if(OpenCL_FOUND)
+        set(OPENCL_FOUND TRUE)
+
+        message(STATUS "OpenCL found using CMake FindOpenCL:")
+        message(STATUS "  Headers: ${OpenCL_INCLUDE_DIRS}")
+        message(STATUS "  Library: ${OpenCL_LIBRARIES}")
     endif()
+endif()
 
-else()
-    # Linux and other Unix platforms.
-    find_package(OpenCL REQUIRED)
+# Create a consistent OpenCL::OpenCL target
+if(OPENCL_FOUND AND NOT TARGET OpenCL::OpenCL)
+    add_library(OpenCL::OpenCL UNKNOWN IMPORTED)
 
-    target_link_libraries(${PROJECT_NAME} PRIVATE
-        OpenCL::OpenCL
+    set_target_properties(OpenCL::OpenCL PROPERTIES
+        IMPORTED_LOCATION "${OPENCL_LIBRARY}"
+        INTERFACE_INCLUDE_DIRECTORIES "${OPENCL_INCLUDE_DIR}"
     )
 endif()
+
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    OpenCL::OpenCL
+)
 
 # Libraries
 target_link_libraries(${PROJECT_NAME} PRIVATE
