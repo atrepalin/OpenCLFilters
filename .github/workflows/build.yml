@@ -17,6 +17,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Install CMake 
+        uses: lukka/get-cmake@v4 
+        with: 
+          cmakeVersion: 4.4.1
+
       - name: Install MinGW
         shell: powershell
         run: |
@@ -38,7 +43,7 @@ jobs:
       - name: Build
         shell: bash
         run: |
-          cmake --build build --config Release --parallel
+          cmake --build build --config Release --parallel 2 --verbose
 
       - name: Package
         shell: bash
@@ -83,6 +88,11 @@ jobs:
             opencl-headers \
             ocl-icd-opencl-dev
 
+      - name: Install CMake 
+        uses: lukka/get-cmake@v4 
+        with: 
+          cmakeVersion: 4.4.1
+
       - name: Configure
         run: |
           cmake -S . -B build \
@@ -90,7 +100,7 @@ jobs:
 
       - name: Build
         run: |
-          cmake --build build --config Release --parallel
+          cmake --build build --config Release --parallel 2 --verbose
 
       - name: Package
         run: |
@@ -132,7 +142,7 @@ jobs:
 
       - name: Build
         run: |
-          cmake --build build --config Release --parallel
+          cmake --build build --config Release --parallel 2 --verbose
 
       - name: Check architecture
         run: |
