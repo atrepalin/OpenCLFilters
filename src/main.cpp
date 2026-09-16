@@ -494,9 +494,8 @@ struct Application
 
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-        glfwWindowHint(
-            GLFW_OPENGL_PROFILE,
-            GLFW_OPENGL_CORE_PROFILE);
+        glfwWindowHint(GLFW_OPENGL_PROFILE,
+                       GLFW_OPENGL_CORE_PROFILE);
 
 #ifdef __APPLE__
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
@@ -618,6 +617,7 @@ struct Application
         // Create output image with same size.
         outputImage.width = inputImage.width;
         outputImage.height = inputImage.height;
+        outputImage.pixels.clear();
         outputImage.pixels.resize(inputImage.pixels.size());
 
         outputImage.uploadTexture();
