@@ -17,9 +17,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Install CMake 
+      - name: Install CMake
         uses: lukka/get-cmake@latest
-        with: 
+        with:
           cmakeVersion: 4.4.1
 
       - name: Install MinGW
@@ -92,6 +92,7 @@ jobs:
           name: OpenCLFilters-Windows-x64
           path: OpenCLFilters-Windows-x64.zip
 
+
   build-linux:
     name: Build Linux
     runs-on: ubuntu-24.04
@@ -120,9 +121,9 @@ jobs:
             opencl-headers \
             ocl-icd-opencl-dev
 
-      - name: Install CMake 
+      - name: Install CMake
         uses: lukka/get-cmake@latest
-        with: 
+        with:
           cmakeVersion: 4.4.1
 
       - name: Configure
@@ -149,48 +150,56 @@ jobs:
           name: OpenCLFilters-Linux-x64
           path: OpenCLFilters-Linux-x64.tar.gz
 
+
   build-macos:
-    name: Build macOS
-    runs-on: macos-14
+    name: Build macOS Universal
+    runs-on: macos-13
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
       - name: Install CMake
-        run: |
-          brew install cmake
+        uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: 4.4.1
 
       - name: Check tools
         run: |
           cmake --version
           clang++ --version
+          uname -m
 
       - name: Configure
         run: |
           cmake -S . -B build \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_OSX_ARCHITECTURES="arm64"
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
 
       - name: Build
         run: |
-          cmake --build build --config Release --parallel 2 --verbose
+          cmake --build build \
+            --config Release \
+            --parallel 2 \
+            --verbose
 
       - name: Check architecture
         run: |
           file build/OpenCLFilters.app/Contents/MacOS/OpenCLFilters
+          lipo -info build/OpenCLFilters.app/Contents/MacOS/OpenCLFilters
 
       - name: Package
         run: |
           ditto -c -k --sequesterRsrc --keepParent \
             build/OpenCLFilters.app \
-            OpenCLFilters-macOS-arm64.zip
+            OpenCLFilters-macOS-universal.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: OpenCLFilters-macOS-arm64
-          path: OpenCLFilters-macOS-arm64.zip
+          name: OpenCLFilters-macOS-universal
+          path: OpenCLFilters-macOS-universal.zip
+
 
   release:
     name: Create GitHub Release
@@ -217,7 +226,7 @@ jobs:
       - name: Download macOS artifact
         uses: actions/download-artifact@v5
         with:
-          name: OpenCLFilters-macOS-arm64
+          name: OpenCLFilters-macOS-universal
           path: release
 
       - name: Create GitHub Release
@@ -229,4 +238,4 @@ jobs:
           files: |
             release/OpenCLFilters-Windows-x64.zip
             release/OpenCLFilters-Linux-x64.tar.gz
-            release/OpenCLFilters-macOS-arm64.zip
+            release/OpenCLFilters-macOS-universal.zip
